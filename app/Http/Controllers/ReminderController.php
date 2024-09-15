@@ -5,15 +5,33 @@ namespace App\Http\Controllers;
 use App\Models\Reminder;
 use App\Http\Requests\StoreReminderRequest;
 use App\Http\Requests\UpdateReminderRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ReminderController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+
+        if($request->loadBy == 'today')
+            $reminders = Auth::user()->reminders()->whereDate('reminder_date', now())->get();
+        else if($request->loadBy == 'tomorrow')
+            $reminders = Auth::user()->reminders()->whereDate('reminder_date', now()->addDay())->get();
+        else if($request->loadBy == 'weekly')
+            $reminders = Auth::user()->reminders()->whereBetween('reminder_date', [
+                now()->addWeeks($request->skip)->startOfWeek()->startOfDay()->format('Y-m-d H:i:s'),
+                now()->addWeeks($request->skip)->endOfWeek()->endOfDay()->format('Y-m-d H:i:s'),
+            ])->get();
+        else if($request->loadBy == 'monthly')
+            $reminders = Auth::user()->reminders()->whereBetween('reminder_date', [
+                now()->addMonths($request->skip)->startOfMonth()->startOfDay()->format('Y-m-d H:i:s'),
+                now()->addMonths($request->skip)->endOfMonth()->endOfDay()->format('Y-m-d H:i:s'),
+            ])->get();
+
+        return response()->json($reminders);
     }
 
     /**
