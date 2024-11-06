@@ -51,4 +51,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Reminder::class);
     }
+
+    public function reminderTypes(): HasMany
+    {
+        return $this->hasMany(ReminderTypes::class);
+    }
 }

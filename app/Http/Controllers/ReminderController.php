@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Reminder;
 use App\Http\Requests\StoreReminderRequest;
 use App\Http\Requests\UpdateReminderRequest;
+use Carbon\Traits\Localization;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class ReminderController extends Controller
@@ -15,21 +17,37 @@ class ReminderController extends Controller
      */
     public function index(Request $request)
     {
+        $day = now()->addDays((int)$request->today);
 
-        if($request->loadBy == 'today')
-            $reminders = Auth::user()->reminders()->whereDate('reminder_date', now())->get();
-        else if($request->loadBy == 'tomorrow')
-            $reminders = Auth::user()->reminders()->whereDate('reminder_date', now()->addDay())->get();
-        else if($request->loadBy == 'weekly')
-            $reminders = Auth::user()->reminders()->whereBetween('reminder_date', [
-                now()->addWeeks($request->skip)->startOfWeek()->startOfDay()->format('Y-m-d H:i:s'),
-                now()->addWeeks($request->skip)->endOfWeek()->endOfDay()->format('Y-m-d H:i:s'),
-            ])->get();
-        else if($request->loadBy == 'monthly')
-            $reminders = Auth::user()->reminders()->whereBetween('reminder_date', [
-                now()->addMonths($request->skip)->startOfMonth()->startOfDay()->format('Y-m-d H:i:s'),
-                now()->addMonths($request->skip)->endOfMonth()->endOfDay()->format('Y-m-d H:i:s'),
-            ])->get();
+        switch ($request->today){
+            case '-1': $dayLabel = 'Ontem'; break;
+            case '0': $dayLabel = 'Hoje'; break;
+            case '1': $dayLabel = 'Amanhã'; break;
+            default: $dayLabel = $day->week == now()->week ? $day->dayName : $day->format('d/m/Y');
+        }
+
+        $week = now()->addWeeks((int)$request->week);
+        switch ($request->week) {
+            case '-1': $weekLabel = 'Passada'; break;
+            case '0': $weekLabel = 'Nesta'; break;
+            case '1': $weekLabel = 'Próxima'; break;
+            default: $weekLabel = $week->startOfWeek()->format('d/m/Y') . ' - ' . $week->endOfWeek()->format('d/m/Y');
+        }
+        $month = now()->addMonths((int)$request->month);
+        $monthLabel = ucfirst($month->shortMonthName) . $month->format('/Y');
+
+        $reminders['today']['data'] = Auth::user()->reminders()->whereDate('reminder_date', $day)->get();
+        $reminders['today']['label'] = ucfirst($dayLabel);
+        $reminders['week']['data'] = Auth::user()->reminders()->whereBetween('reminder_date', [
+            $week->startOfWeek()->startOfDay()->format('Y-m-d H:i:s'),
+            $week->endOfWeek()->endOfDay()->format('Y-m-d H:i:s'),
+        ])->get();
+        $reminders['week']['label'] = ucfirst($weekLabel);
+        $reminders['month']['data'] = Auth::user()->reminders()->whereBetween('reminder_date', [
+            $month->startOfMonth()->startOfDay()->format('Y-m-d H:i:s'),
+            $month->endOfMonth()->endOfDay()->format('Y-m-d H:i:s'),
+        ])->get();
+        $reminders['month']['label'] = $monthLabel;
 
         return response()->json($reminders);
     }
@@ -47,7 +65,11 @@ class ReminderController extends Controller
      */
     public function store(StoreReminderRequest $request)
     {
-        //
+        $reminder = $request->all();
+        $reminder['body'] = '';
+        $reminder = Auth::user()->reminders()->create($reminder);
+
+        return response()->json($reminder);
     }
 
     /**
@@ -71,7 +93,9 @@ class ReminderController extends Controller
      */
     public function update(UpdateReminderRequest $request, Reminder $reminder)
     {
-        //
+        $reminder->update($request->all());
+
+        return response()->json($reminder);
     }
 
     /**

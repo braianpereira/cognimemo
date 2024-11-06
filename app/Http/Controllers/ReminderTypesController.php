@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ReminderTypes;
 use App\Http\Requests\StoreReminderTypesRequest;
 use App\Http\Requests\UpdateReminderTypesRequest;
+use Illuminate\Support\Facades\Auth;
 
 class ReminderTypesController extends Controller
 {
@@ -13,7 +14,7 @@ class ReminderTypesController extends Controller
      */
     public function index()
     {
-        //
+        return Auth::user()->reminderTypes()->get();
     }
 
     /**
