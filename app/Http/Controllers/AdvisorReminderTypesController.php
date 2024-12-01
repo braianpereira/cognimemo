@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\UserAdvisor;
-use App\Http\Requests\StoreUserAdvisorRequest;
-use App\Http\Requests\UpdateUserAdvisorRequest;
+use App\Models\ReminderTypes;
+use App\Http\Requests\StoreReminderTypesRequest;
+use App\Http\Requests\UpdateReminderTypesRequest;
 use Illuminate\Support\Facades\Auth;
 
-class UserAdvisorController extends Controller
+class AdvisorReminderTypesController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return response()->json(Auth::user()->advisees);
+        return Auth::user()->reminderTypes()->get();
     }
 
     /**
@@ -28,7 +28,7 @@ class UserAdvisorController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreUserAdvisorRequest $request)
+    public function store(StoreReminderTypesRequest $request)
     {
         //
     }
@@ -36,7 +36,7 @@ class UserAdvisorController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(UserAdvisor $userAdvisor)
+    public function show(ReminderTypes $remindersType)
     {
         //
     }
@@ -44,7 +44,7 @@ class UserAdvisorController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(UserAdvisor $userAdvisor)
+    public function edit(ReminderTypes $remindersType)
     {
         //
     }
@@ -52,7 +52,7 @@ class UserAdvisorController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateUserAdvisorRequest $request, UserAdvisor $userAdvisor)
+    public function update(UpdateReminderTypesRequest $request, ReminderTypes $remindersType)
     {
         //
     }
@@ -60,7 +60,7 @@ class UserAdvisorController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(UserAdvisor $userAdvisor)
+    public function destroy(ReminderTypes $remindersType)
     {
         //
     }

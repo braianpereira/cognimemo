@@ -7,19 +7,23 @@ use App\Models\Reminder;
 use App\Http\Requests\StoreReminderRequest;
 use App\Http\Requests\UpdateReminderRequest;
 use App\Models\ReminderGroups;
+use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class ReminderController extends Controller
+class AdvisorReminderController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request, $user)
     {
+        Log::alert($user);
         $label = "";
 
         switch ($request->section){
@@ -33,7 +37,7 @@ class ReminderController extends Controller
                     default: $label = $day->week == now()->week ? $day->dayName : $day->format('d/m/Y');
                 }
 
-                $data = new ReminderCollection(Auth::user()->reminders()->whereDate('reminder_date', $day)->get());
+                $data = new ReminderCollection(Auth::user()->advisees()->where('user_id', $user)->first()->reminders()->whereDate('reminder_date', $day)->get());
                 break;
             case 'week':
                 $week = now()->addWeeks((int)$request->week);
@@ -44,7 +48,7 @@ class ReminderController extends Controller
                     default: $label = $week->startOfWeek()->format('d/m/Y') . ' - ' . $week->endOfWeek()->format('d/m/Y');
                 }
 
-                $data = new ReminderCollection(Auth::user()->reminders()->whereBetween('reminder_date', [
+                $data = new ReminderCollection(Auth::user()->advisees()->where('user_id', $user)->first()->reminders()->whereBetween('reminder_date', [
                     $week->startOfWeek()->startOfDay()->format('Y-m-d H:i:s'),
                     $week->endOfWeek()->endOfDay()->format('Y-m-d H:i:s'),
                 ])->orderBy('reminder_date')->get());
@@ -54,7 +58,7 @@ class ReminderController extends Controller
                 $month = now()->addMonths((int)$request->index);
                 $label = ucfirst($month->shortMonthName) . $month->format('/Y');
 
-                $data = new ReminderCollection(Auth::user()->reminders()->whereBetween('reminder_date', [
+                $data = new ReminderCollection(Auth::user()->advisees()->where('user_id', $user)->first()->reminders()->whereBetween('reminder_date', [
                     $month->startOfMonth()->startOfDay()->format('Y-m-d H:i:s'),
                     $month->endOfMonth()->endOfDay()->format('Y-m-d H:i:s'),
                 ])->orderBy('reminder_date')->get());
@@ -71,7 +75,7 @@ class ReminderController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreReminderRequest $request)
+    public function store(StoreReminderRequest $request, $user)
     {
         try {
             $reminder = $request->all();
@@ -80,6 +84,8 @@ class ReminderController extends Controller
             DB::beginTransaction();
 
             if($reminder['repeat']) {
+
+
                 $group = ReminderGroups::create([
                     'period' => $reminder['period'],
                     'starts_at' => $reminder['reminder_date'],
@@ -116,15 +122,16 @@ class ReminderController extends Controller
                     ];
                 }
 
-                $reminder = (Auth::user()->reminders()->createMany($reminders))[0];
+                $reminder = (Auth::user()->advisees()->where('user_id', $user)->first()->reminders()->createMany($reminders))[0];
             } else {
-                $reminder = Auth::user()->reminders()->create($reminder);
+                $reminder = Auth::user()->advisees()->where('user_id', $user)->first()->reminders()->create($reminder);
             }
 
             DB::commit();
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error($e->getFile() . " on line " . $e->getLine() .":" .  $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
 
@@ -134,28 +141,48 @@ class ReminderController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(StoreReminderRequest $request, Reminder $reminder, $action = null)
+    public function update(StoreReminderRequest $request, $user, Reminder $reminder, $action = null): JsonResponse
     {
-        if($reminder->repeat == true) {
-            if($request->get('repeat') == false) {
-                $reminder->reminderGroup()->reminders->whereNot('id', $reminder->id)->delete();
-            }
-            else if($action == 'all') {
-                if($reminder->reminderGroup && $reminder->reminderGroup->reminders && $reminder->reminderGroup->reminders()->delete()){
-                    if($reminder->reminderGroup) {
-                        $reminder->reminderGroup()->delete();
-                    }
-                }
-            }
-            return $this->store($request);
-        } else {
-            if($request->get('repeat') == true) {
-               $reminder->delete();
-                return $this->store($request);
-            }
+        try {
+            $reminder = Auth::user()
+                ->advisees()
+                ->where('user_id', $user)
+                ->firstOrFail()
+                ->reminders()
+                ->where('id', $reminder->id)
+                ->firstOrFail();
+        } catch (ModelNotFoundException $e) {
+            Log::error($e);
+
+            return response()->json(['error' => 'Not found.'], 404);
         }
 
-        $reminder->update($request->all());
+        try {
+            if($reminder->repeat == true) {
+                if($request->get('repeat') == false) {
+                    $reminder->reminderGroup()->reminders->whereNot('id', $reminder->id)->delete();
+                }
+                else if($action == 'all') {
+                    if($reminder->reminderGroup && $reminder->reminderGroup->reminders && $reminder->reminderGroup->reminders()->delete()){
+                        if($reminder->reminderGroup) {
+                            $reminder->reminderGroup()->delete();
+                        }
+                    }
+                }
+                return $this->store($request, $user);
+            } else {
+                if($request->get('repeat') == true) {
+                    $reminder->delete();
+                    return $this->store($request, $user);
+                } else {
+                    $reminder->update($request->all());
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error($e);
+
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
 
         return response()->json($reminder);
     }
@@ -163,9 +190,16 @@ class ReminderController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Reminder $reminder, $groupStatus)
+    public function destroy($user, Reminder $reminder, $groupStatus)
     {
         $status = false;
+
+        $reminder = Auth::user()->advisees()
+            ->where('user_id', $user)
+            ->firstOrFail()
+            ->reminders()
+            ->where('id', $reminder->id)
+            ->firstOrFail();
 
         switch ($groupStatus) {
             case 'maintain':  $status = $reminder->delete(); break;
@@ -194,10 +228,10 @@ class ReminderController extends Controller
         return response()->json($status);
     }
 
-    public function toggleStatus(Request $request, Reminder $reminder)
+    public function toggleStatus(Request $request, $user, Reminder $reminder)
     {
         try {
-            $reminder = Auth::user()->reminders()->where('id', $reminder->id)->firstOrFail();
+            $reminder = Auth::user()->advisees()->where('user_id', $user)->firstOrFail()->reminders()->where('id', $reminder->id)->firstOrFail();
 
             try {
                 $reminder->status = $request->status;
@@ -208,7 +242,6 @@ class ReminderController extends Controller
             }
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error($e);
             return response()->json(['error' => 'reminder not found'], 404);
         }
 

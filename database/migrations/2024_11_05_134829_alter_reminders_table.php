@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('reminders', function (Blueprint $table) {
-            $table->unsignedBigInteger('reference_group_id')->nullable()->after('status');
+            $table->unsignedBigInteger('reminder_group_id')->nullable();
+            $table->dropColumn('starts_at');
+            $table->dropColumn('ends_at');
+            $table->dropColumn('reference');
         });
     }
 
@@ -23,9 +26,6 @@ return new class extends Migration
     {
         Schema::table('reminders', function (Blueprint $table) {
             $table->dropColumn('reference_group_id');
-            $table->dropColumn('starts_at');
-            $table->dropColumn('ends_at');
-            $table->dropColumn('reference');
         });
     }
 };

@@ -17,8 +17,10 @@ class Reminder extends Model
         'status',
         'repeat',
         'reminder_type_id',
-        'starts_at',
-        'ends_at',
-        'reference'
+        'reminder_group_id'
     ];
+
+    public function reminderGroup(){
+        return $this->belongsTo(ReminderGroups::class, 'reminder_group_id', 'id');
+    }
 }
