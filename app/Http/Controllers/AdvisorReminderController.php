@@ -117,6 +117,7 @@ class AdvisorReminderController extends Controller
 
                     $reminders[] = [
                         ...$request->all(),
+                        'body' => 'body',
                         'reminder_date' => $start->format('Y-m-d H:i:s'),
                         'reminder_group_id' => $group->id
                     ];
