@@ -23,4 +23,9 @@ class Reminder extends Model
     public function reminderGroup(){
         return $this->belongsTo(ReminderGroups::class, 'reminder_group_id', 'id');
     }
+
+    public function reminder_type()
+    {
+        return $this->belongsTo(ReminderTypes::class, 'reminder_type_id', 'id');
+    }
 }

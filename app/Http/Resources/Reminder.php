@@ -27,6 +27,7 @@ class Reminder extends JsonResource
             'repeat_desc' => $this->repeat && $group ? periodToBr($group->period) : 'Não',
             'reference_group_id' => $this->reference_group_id,
             'reminder_type_id' => $this->reminder_type_id,
+            'reminder_type_desc' => $this->reminder_type->name,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'group' => $group,
