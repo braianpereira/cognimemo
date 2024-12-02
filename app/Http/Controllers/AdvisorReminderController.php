@@ -40,7 +40,7 @@ class AdvisorReminderController extends Controller
                 $data = new ReminderCollection(Auth::user()->advisees()->where('user_id', $user)->first()->reminders()->whereDate('reminder_date', $day)->get());
                 break;
             case 'week':
-                $week = now()->addWeeks((int)$request->week);
+                $week = now()->addWeeks((int)$request->index);
                 switch ($request->index) {
                     case '-1': $label = 'Passada'; break;
                     case '0': $label = 'Nesta'; break;
