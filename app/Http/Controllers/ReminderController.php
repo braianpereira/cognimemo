@@ -156,7 +156,7 @@ class ReminderController extends Controller
             }
         }
 
-        $reminder->update($request->all());
+        $reminder->update([...$request->all(), 'body' => 'body']);
 
         return response()->json($reminder);
     }
