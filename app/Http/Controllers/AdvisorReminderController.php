@@ -176,7 +176,7 @@ class AdvisorReminderController extends Controller
                     $reminder->delete();
                     return $this->store($request, $user);
                 } else {
-                    $reminder->update($request->all());
+                    $reminder->update([...$request->all(), 'body' => 'body']);
                 }
             }
         } catch (\Exception $e) {
