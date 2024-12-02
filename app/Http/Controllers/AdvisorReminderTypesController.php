@@ -6,15 +6,23 @@ use App\Models\ReminderTypes;
 use App\Http\Requests\StoreReminderTypesRequest;
 use App\Http\Requests\UpdateReminderTypesRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class AdvisorReminderTypesController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index($user)
     {
-        return Auth::user()->reminderTypes()->get();
+        try {
+            $types = Auth::user()->advisees()->where('user_id', $user)->firstOrFail()->reminderTypes()->get();
+
+            return response()->json($types);
+
+        }catch (\Exception $exception){
+            return response()->json($exception->getMessage());
+        }
     }
 
     /**
@@ -22,15 +30,27 @@ class AdvisorReminderTypesController extends Controller
      */
     public function create()
     {
-        //
+
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreReminderTypesRequest $request)
+    public function store(StoreReminderTypesRequest $request, $user)
     {
-        //
+        try {
+            $type = Auth::user()
+                ->advisees()
+                ->where('user_id', $user)
+                ->firstOrFail()
+                ->reminderTypes()
+                ->create($request->all());
+
+            return response()->json($type, 201);
+        } catch (\Exception $ex) {
+            Log::error($ex);
+            return response()->json($ex->getMessage(), 500);
+        }
     }
 
     /**

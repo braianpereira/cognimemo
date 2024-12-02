@@ -11,7 +11,7 @@ class StoreReminderTypesRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,8 +21,19 @@ class StoreReminderTypesRequest extends FormRequest
      */
     public function rules(): array
     {
+        $userId = $this->route('user') ?: $this->user()->id;
+
+
         return [
-            //
+            'name' => 'required|string|max:255|unique:reminder_types,name,NULL,id,user_id,' . $userId,
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'O nome da categoria é obrigatório.',
+            'name.unique' => 'Você já possui uma categoria com este nome.',
         ];
     }
 }

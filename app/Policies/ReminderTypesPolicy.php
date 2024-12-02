@@ -21,7 +21,7 @@ class ReminderTypesPolicy
      */
     public function view(User $user, ReminderTypes $remindersType): bool
     {
-        //
+        return true;
     }
 
     /**
@@ -29,7 +29,7 @@ class ReminderTypesPolicy
      */
     public function create(User $user): bool
     {
-        //
+        return true;
     }
 
     /**
@@ -37,7 +37,7 @@ class ReminderTypesPolicy
      */
     public function update(User $user, ReminderTypes $remindersType): bool
     {
-        //
+        return true;
     }
 
     /**
@@ -45,7 +45,7 @@ class ReminderTypesPolicy
      */
     public function delete(User $user, ReminderTypes $remindersType): bool
     {
-        //
+        return true;
     }
 
     /**
@@ -53,7 +53,7 @@ class ReminderTypesPolicy
      */
     public function restore(User $user, ReminderTypes $remindersType): bool
     {
-        //
+        return true;
     }
 
     /**
@@ -61,6 +61,6 @@ class ReminderTypesPolicy
      */
     public function forceDelete(User $user, ReminderTypes $remindersType): bool
     {
-        //
+        return true;
     }
 }

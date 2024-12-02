@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->date('starts_at');
             $table->date('ends_at');
+            $table->string('period')->default('daily');
             $table->timestamps();
         });
     }

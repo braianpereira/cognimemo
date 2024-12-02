@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 
@@ -28,18 +29,29 @@ class RegisteredUserController extends Controller
             'user_type' => ['required', 'string', Rule::in(['user','advisor', 'both'])],
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->string('password')),
-            'user_type' => $request->user_type,
-        ]);
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->string('password')),
+                'user_type' => $request->user_type,
+            ]);
 
-//        dd($user);
+            if($user){
+                $user->reminderTypes()->create([
+                    'name' => 'Padrão'
+                ]);
+            }
 
-        event(new Registered($user));
+            event(new Registered($user));
 
-        Auth::login($user);
+            Auth::login($user);
+        } catch (\Exception $exception) {
+            Log::error($exception);
+
+            return response()->withException($exception);
+        }
+
 
         return response()->noContent();
     }
